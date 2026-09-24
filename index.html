@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Śledzenie dawek</title>
+  <style>
+    :root {
+      --bg: #0f0f12;
+      --surface: #1a1a20;
+      --surface2: #24242c;
+      --border: #333340;
+      --text: #f0f0f5;
+      --text-muted: #9a9aad;
+      --accent: #6c5ce7;
+      --accent-hover: #7d6ff0;
+      --danger: #e74c3c;
+      --danger-hover: #c0392b;
+      --success: #2ecc71;
+      --radius: 12px;
+      --shadow: 0 4px 20px rgba(0,0,0,0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      padding: 16px;
+      padding-bottom: 40px;
+    }
+
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 20px;
+      letter-spacing: -0.02em;
+    }
+
+    /* === Dodawanie dawki === */
+    .add-section {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .input-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    input[type="number"] {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 1.15rem;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type="number"]:focus {
+      border-color: var(--accent);
+    }
+
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      opacity: 1;
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      padding: 14px 18px;
+    }
+
+    button:active {
+      transform: scale(0.97);
+    }
+
+    .btn-add {
+      background: var(--accent);
+      color: white;
+      white-space: nowrap;
+    }
+
+    .btn-add:hover {
+      background: var(--accent-hover);
+    }
+
+    /* === Dzisiaj === */
+    .today-section {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 20px 16px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .today-total {
+      text-align: center;
+      margin-bottom: 18px;
+    }
+
+    .today-total .label {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .today-total .value {
+      font-size: 2.4rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--success);
+    }
+
+    .entries-list {
+      list-style: none;
+    }
+
+    .entry-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .entry-item:last-child {
+      border-bottom: none;
+    }
+
+    .entry-info {
+      font-size: 1.05rem;
+    }
+
+    .entry-info .time {
+      color: var(--text-muted);
+      margin-right: 8px;
+    }
+
+    .btn-delete {
+      background: transparent;
+      color: var(--danger);
+      padding: 8px 12px;
+      font-size: 0.9rem;
+      border-radius: 8px;
+    }
+
+    .btn-delete:hover {
+      background: rgba(231, 76, 60, 0.15);
+    }
+
+    .empty-msg {
+      text-align: center;
+      color: var(--text-muted);
+      padding: 12px 0;
+      font-size: 0.95rem;
+    }
+
+    /* === Kalendarz === */
+    .calendar-section {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .cal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .cal-header h2 {
+      font-size: 1.15rem;
+      font-weight: 600;
+    }
+
+    .cal-nav {
+      display: flex;
+      gap: 8px;
+    }
+
+    .cal-nav button {
+      background: var(--surface2);
+      color: var(--text);
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      font-size: 1.2rem;
+      border-radius: 10px;
+    }
+
+    .cal-nav button:hover {
+      background: var(--border);
+    }
+
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+
+    .cal-day-name {
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      padding: 6px 0;
+      font-weight: 600;
+    }
+
+    .cal-day {
+      aspect-ratio: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      background: var(--surface2);
+      cursor: pointer;
+      transition: background 0.15s;
+      position: relative;
+      font-size: 0.95rem;
+      min-height: 48px;
+    }
+
+    .cal-day:hover {
+      background: var(--border);
+    }
+
+    .cal-day.other-month {
+      opacity: 0.35;
+    }
+
+    .cal-day.today {
+      outline: 2px solid var(--accent);
+      outline-offset: -2px;
+    }
+
+    .cal-day.selected {
+      background: var(--accent);
+      color: white;
+    }
+
+    .cal-day .day-num {
+      font-weight: 600;
+    }
+
+    .cal-day .day-total {
+      font-size: 0.65rem;
+      color: var(--success);
+      margin-top: 1px;
+      font-weight: 600;
+    }
+
+    .cal-day.selected .day-total {
+      color: rgba(255,255,255,0.9);
+    }
+
+    .cal-day.empty {
+      background: transparent;
+      cursor: default;
+    }
+
+    /* === Szczegóły dnia === */
+    .day-details {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      display: none;
+    }
+
+    .day-details.visible {
+      display: block;
+    }
+
+    .day-details h3 {
+      font-size: 1rem;
+      margin-bottom: 12px;
+      color: var(--text-muted);
+    }
+
+    .day-details .entry-item {
+      padding: 10px 0;
+    }
+
+    /* Małe ekrany */
+    @media (max-width: 380px) {
+      .today-total .value {
+        font-size: 2rem;
+      }
+      .cal-day {
+        font-size: 0.85rem;
+        min-height: 42px;
+      }
+      .cal-day .day-total {
+        font-size: 0.6rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Śledzenie dawek</h1>
+
+    <!-- Dodawanie -->
+    <section class="add-section">
+      <div class="input-row">
+        <input type="number" id="doseInput" placeholder="np. 8.0" step="0.1" min="0.1" inputmode="decimal">
+        <button class="btn-add" id="addBtn">Dodaj dawkę</button>
+      </div>
+    </section>
+
+    <!-- Dzisiaj -->
+    <section class="today-section">
+      <div class="today-total">
+        <div class="label">Dzisiaj łącznie</div>
+        <div class="value" id="todayTotal">0.0 g</div>
+      </div>
+      <ul class="entries-list" id="todayList"></ul>
+    </section>
+
+    <!-- Kalendarz -->
+    <section class="calendar-section">
+      <div class="cal-header">
+        <h2 id="calTitle">Wrzesień 2025</h2>
+        <div class="cal-nav">
+          <button id="prevMonth" aria-label="Poprzedni miesiąc">‹</button>
+          <button id="nextMonth" aria-label="Następny miesiąc">›</button>
+        </div>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+
+      <div class="day-details" id="dayDetails">
+        <h3 id="dayDetailsTitle"></h3>
+        <ul class="entries-list" id="dayDetailsList"></ul>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // ========== Dane ==========
+    const STORAGE_KEY = 'doseTrackerEntries';
+
+    let entries = loadEntries();
+    let currentYear, currentMonth; // 0-based month
+    let selectedDate = null; // 'YYYY-MM-DD'
+
+    function loadEntries() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveEntries() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    }
+
+    function generateId() {
+      return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    }
+
+    function todayStr() {
+      const d = new Date();
+      return formatDate(d);
+    }
+
+    function formatDate(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function formatTime(d) {
+      return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    }
+
+    function formatDisplayDate(dateStr) {
+      const [y, m, d] = dateStr.split('-').map(Number);
+      const date = new Date(y, m - 1, d);
+      const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+      return date.toLocaleDateString('pl-PL', options);
+    }
+
+    const monthNames = [
+      'Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec',
+      'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień'
+    ];
+
+    // ========== Logika ==========
+    function addDose() {
+      const input = document.getElementById('doseInput');
+      const val = parseFloat(input.value.replace(',', '.'));
+      if (isNaN(val) || val <= 0) {
+        input.focus();
+        return;
+      }
+
+      const now = new Date();
+      const entry = {
+        id: generateId(),
+        date: formatDate(now),
+        time: formatTime(now),
+        amount: Math.round(val * 10) / 10 // 1 miejsce po przecinku
+      };
+
+      entries.push(entry);
+      saveEntries();
+      input.value = '';
+      input.focus();
+
+      renderToday();
+      renderCalendar();
+      if (selectedDate === entry.date) {
+        renderDayDetails(selectedDate);
+      }
+    }
+
+    function deleteEntry(id) {
+      entries = entries.filter(e => e.id !== id);
+      saveEntries();
+      renderToday();
+      renderCalendar();
+      if (selectedDate) {
+        renderDayDetails(selectedDate);
+      }
+    }
+
+    function getEntriesForDate(dateStr) {
+      return entries
+        .filter(e => e.date === dateStr)
+        .sort((a, b) => a.time.localeCompare(b.time));
+    }
+
+    function getTotalForDate(dateStr) {
+      return getEntriesForDate(dateStr).reduce((sum, e) => sum + e.amount, 0);
+    }
+
+    // ========== Render ==========
+    function renderToday() {
+      const today = todayStr();
+      const list = getEntriesForDate(today);
+      const total = list.reduce((s, e) => s + e.amount, 0);
+
+      document.getElementById('todayTotal').textContent = total.toFixed(1) + ' g';
+
+      const ul = document.getElementById('todayList');
+      if (list.length === 0) {
+        ul.innerHTML = '<li class="empty-msg">Brak wpisów na dziś</li>';
+        return;
+      }
+
+      ul.innerHTML = list.map(e => `
+        <li class="entry-item">
+          <span class="entry-info">
+            <span class="time">${e.time}</span>
+            <strong>${e.amount.toFixed(1)} g</strong>
+          </span>
+          <button class="btn-delete" data-id="${e.id}">Usuń</button>
+        </li>
+      `).join('');
+
+      ul.querySelectorAll('.btn-delete').forEach(btn => {
+        btn.addEventListener('click', () => deleteEntry(btn.dataset.id));
+      });
+    }
+
+    function renderCalendar() {
+      const title = document.getElementById('calTitle');
+      title.textContent = `${monthNames[currentMonth]} ${currentYear}`;
+
+      const grid = document.getElementById('calGrid');
+      grid.innerHTML = '';
+
+      // Nazwy dni
+      const dayNames = ['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'So', 'Nd'];
+      dayNames.forEach(name => {
+        const el = document.createElement('div');
+        el.className = 'cal-day-name';
+        el.textContent = name;
+        grid.appendChild(el);
+      });
+
+      const firstDay = new Date(currentYear, currentMonth, 1);
+      // Poniedziałek = 0 (w Polsce)
+      let startWeekday = firstDay.getDay() - 1;
+      if (startWeekday < 0) startWeekday = 6;
+
+      const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+      const today = todayStr();
+
+      // Puste komórki na początku
+      for (let i = 0; i < startWeekday; i++) {
+        const empty = document.createElement('div');
+        empty.className = 'cal-day empty';
+        grid.appendChild(empty);
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const total = getTotalForDate(dateStr);
+
+        const cell = document.createElement('div');
+        cell.className = 'cal-day';
+        if (dateStr === today) cell.classList.add('today');
+        if (dateStr === selectedDate) cell.classList.add('selected');
+
+        cell.innerHTML = `
+          <span class="day-num">${day}</span>
+          ${total > 0 ? `<span class="day-total">${total.toFixed(1)}</span>` : ''}
+        `;
+
+        cell.addEventListener('click', () => {
+          selectedDate = dateStr;
+          renderCalendar();
+          renderDayDetails(dateStr);
+        });
+
+        grid.appendChild(cell);
+      }
+    }
+
+    function renderDayDetails(dateStr) {
+      const details = document.getElementById('dayDetails');
+      const title = document.getElementById('dayDetailsTitle');
+      const list = document.getElementById('dayDetailsList');
+
+      const dayEntries = getEntriesForDate(dateStr);
+      title.textContent = formatDisplayDate(dateStr);
+
+      if (dayEntries.length === 0) {
+        list.innerHTML = '<li class="empty-msg">Brak wpisów tego dnia</li>';
+      } else {
+        list.innerHTML = dayEntries.map(e => `
+          <li class="entry-item">
+            <span class="entry-info">
+              <span class="time">${e.time}</span>
+              <strong>${e.amount.toFixed(1)} g</strong>
+            </span>
+            <button class="btn-delete" data-id="${e.id}">Usuń</button>
+          </li>
+        `).join('');
+
+        list.querySelectorAll('.btn-delete').forEach(btn => {
+          btn.addEventListener('click', () => deleteEntry(btn.dataset.id));
+        });
+      }
+
+      details.classList.add('visible');
+    }
+
+    // ========== Init ==========
+    function init() {
+      const now = new Date();
+      currentYear = now.getFullYear();
+      currentMonth = now.getMonth();
+
+      document.getElementById('addBtn').addEventListener('click', addDose);
+      document.getElementById('doseInput').addEventListener('keydown', e => {
+        if (e.key === 'Enter') addDose();
+      });
+
+      document.getElementById('prevMonth').addEventListener('click', () => {
+        currentMonth--;
+        if (currentMonth < 0) {
+          currentMonth = 11;
+          currentYear--;
+        }
+        selectedDate = null;
+        document.getElementById('dayDetails').classList.remove('visible');
+        renderCalendar();
+      });
+
+      document.getElementById('nextMonth').addEventListener('click', () => {
+        currentMonth++;
+        if (currentMonth > 11) {
+          currentMonth = 0;
+          currentYear++;
+        }
+        selectedDate = null;
+        document.getElementById('dayDetails').classList.remove('visible');
+        renderCalendar();
+      });
+
+      renderToday();
+      renderCalendar();
+    }
+
+    init();
+  </script>
+</body>
+</html>
